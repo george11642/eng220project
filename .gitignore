@@ -1,6 +1,5 @@
 # Data files
-data/
-*.csv
+data/*
 !data/cleaned_data.csv
 *.xlsx
 *.json
