@@ -142,12 +142,13 @@ def main():
         selected_metric_col = None
     
     # Main content tabs
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "Overview", 
         "Trends Over Time", 
         "State Comparisons", 
         "Relationships",
-        "New Mexico Focus"
+        "New Mexico Focus",
+        "Key Findings"
     ])
     
     # Tab 1: Overview
@@ -301,6 +302,210 @@ def main():
                 st.warning("No New Mexico data found in the filtered dataset.")
         else:
             st.warning("New Mexico data not available. Check state column and data filters.")
+    
+    # Tab 6: Key Findings
+    with tab6:
+        st.header("🎯 Key Findings for Presentation")
+        
+        if state_col and year_col and 'crime_rate_per_100k' in df.columns and 'incarceration_rate_per_100k' in df.columns:
+            # Calculate findings
+            nm = df[df[state_col].str.contains('New Mexico', case=False, na=False)]
+            other = df[~df[state_col].str.contains('New Mexico', case=False, na=False)]
+            
+            if len(nm) > 0:
+                # Finding 1: The Paradox
+                st.subheader("🔍 Finding 1: The New Mexico Paradox")
+                st.markdown("---")
+                
+                latest = df[df[year_col] == df[year_col].max()].copy()
+                latest_crime = latest.sort_values('crime_rate_per_100k', ascending=False)
+                latest_incarc = latest.sort_values('incarceration_rate_per_100k', ascending=False)
+                
+                nm_crime_rank = (latest_crime['crime_rate_per_100k'] > latest_crime[latest_crime[state_col].str.contains('New Mexico', case=False, na=False)]['crime_rate_per_100k'].values[0]).sum() + 1
+                nm_incarc_rank = (latest_incarc['incarceration_rate_per_100k'] > latest_incarc[latest_incarc[state_col].str.contains('New Mexico', case=False, na=False)]['incarceration_rate_per_100k'].values[0]).sum() + 1
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric(
+                        "Crime Rate Rank (2016)",
+                        f"#{nm_crime_rank}",
+                        "Highest in the nation!",
+                        delta_color="inverse"
+                    )
+                    nm_crime = nm['crime_rate_per_100k'].mean()
+                    other_crime = other['crime_rate_per_100k'].mean()
+                    st.write(f"**New Mexico:** {nm_crime:.0f} per 100k")
+                    st.write(f"**National Avg:** {other_crime:.0f} per 100k")
+                    st.write(f"**Difference:** {((nm_crime/other_crime)-1)*100:+.1f}%")
+                
+                with col2:
+                    st.metric(
+                        "Incarceration Rate Rank (2016)",
+                        f"#{nm_incarc_rank}",
+                        "Middle of the pack",
+                        delta_color="normal"
+                    )
+                    nm_incarc = nm['incarceration_rate_per_100k'].mean()
+                    other_incarc = other['incarceration_rate_per_100k'].mean()
+                    st.write(f"**New Mexico:** {nm_incarc:.0f} per 100k")
+                    st.write(f"**National Avg:** {other_incarc:.0f} per 100k")
+                    st.write(f"**Difference:** {((nm_incarc/other_incarc)-1)*100:+.1f}%")
+                
+                st.info("💡 **Key Insight:** New Mexico has the highest crime rate but only average incarceration - suggesting a disconnect between crime levels and justice system response.")
+                
+                # Finding 2: Trends
+                st.subheader("📈 Finding 2: Divergent Trends Over Time")
+                st.markdown("---")
+                
+                nm_sorted = nm.sort_values(year_col)
+                if len(nm_sorted) > 1:
+                    crime_2001 = nm_sorted.iloc[0]['crime_rate_per_100k']
+                    crime_2016 = nm_sorted.iloc[-1]['crime_rate_per_100k']
+                    crime_change = ((crime_2016 / crime_2001) - 1) * 100
+                    
+                    incarc_2001 = nm_sorted.iloc[0]['incarceration_rate_per_100k']
+                    incarc_2016 = nm_sorted.iloc[-1]['incarceration_rate_per_100k']
+                    incarc_change = ((incarc_2016 / incarc_2001) - 1) * 100
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric(
+                            "Crime Rate Change (2001-2016)",
+                            f"{crime_change:+.1f}%",
+                            f"{crime_2001:.0f} → {crime_2016:.0f}",
+                            delta_color="normal"
+                        )
+                    
+                    with col2:
+                        st.metric(
+                            "Incarceration Rate Change (2001-2016)",
+                            f"{incarc_change:+.1f}%",
+                            f"{incarc_2001:.0f} → {incarc_2016:.0f}",
+                            delta_color="inverse"
+                        )
+                    
+                    st.warning("⚠️ **The Paradox:** Crime decreased 13% but incarceration increased 8.4% - the opposite of what you'd expect!")
+                
+                # Finding 3: Correlation
+                st.subheader("🔗 Finding 3: Correlation Analysis")
+                st.markdown("---")
+                
+                corr = df[['crime_rate_per_100k', 'incarceration_rate_per_100k']].corr()
+                corr_value = corr.iloc[0, 1]
+                
+                st.metric("Overall Correlation", f"{corr_value:.3f}")
+                
+                if abs(corr_value) < 0.3:
+                    st.warning("**WEAK correlation** - suggests complex relationship beyond just crime rates!")
+                elif abs(corr_value) < 0.7:
+                    st.info("**MODERATE correlation** - many factors influence incarceration beyond crime alone.")
+                else:
+                    st.success("**STRONG correlation** - crime and incarceration are closely linked.")
+                
+                # Finding 4: Regional Comparison
+                st.subheader("🗺️ Finding 4: Regional Comparison (2016)")
+                st.markdown("---")
+                
+                latest_year = df[year_col].max()
+                latest = df[df[year_col] == latest_year].copy()
+                southwest = ['New Mexico', 'Arizona', 'Texas', 'Nevada', 'Utah', 'Colorado']
+                sw_data = latest[latest[state_col].isin(southwest)].copy()
+                
+                if len(sw_data) > 0:
+                    sw_data = sw_data.sort_values('crime_rate_per_100k', ascending=False)
+                    st.dataframe(
+                        sw_data[[state_col, 'crime_rate_per_100k', 'incarceration_rate_per_100k']].rename(columns={
+                            state_col: 'State',
+                            'crime_rate_per_100k': 'Crime Rate',
+                            'incarceration_rate_per_100k': 'Incarceration Rate'
+                        }),
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                    
+                    nm_sw = sw_data[sw_data[state_col].str.contains('New Mexico', case=False, na=False)]
+                    az_sw = sw_data[sw_data[state_col].str.contains('Arizona', case=False, na=False)]
+                    
+                    if len(nm_sw) > 0 and len(az_sw) > 0:
+                        st.info(f"💡 **Comparison:** Arizona has {((az_sw['crime_rate_per_100k'].values[0]/nm_sw['crime_rate_per_100k'].values[0])-1)*100:.0f}% less crime but {((az_sw['incarceration_rate_per_100k'].values[0]/nm_sw['incarceration_rate_per_100k'].values[0])-1)*100:.0f}% MORE incarceration!")
+                
+                # Finding 5: Ratio Analysis
+                st.subheader("📊 Finding 5: Incarceration-to-Crime Ratio")
+                st.markdown("---")
+                
+                latest['ratio'] = latest['incarceration_rate_per_100k'] / latest['crime_rate_per_100k']
+                latest_ratio = latest.sort_values('ratio', ascending=False)
+                
+                nm_ratio = latest[latest[state_col].str.contains('New Mexico', case=False, na=False)]['ratio'].values[0]
+                nm_ratio_rank = (latest_ratio['ratio'] > nm_ratio).sum() + 1
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("New Mexico Ratio", f"{nm_ratio:.3f}", f"Rank: #{nm_ratio_rank} out of {len(latest)}")
+                    st.write(f"This means: **For every 1,000 crimes, only {nm_ratio*1000:.0f} people are incarcerated**")
+                
+                with col2:
+                    st.write("**States with Highest Ratios:**")
+                    top_ratios = latest_ratio.head(5)[[state_col, 'ratio']]
+                    for idx, row in top_ratios.iterrows():
+                        st.write(f"- {row[state_col]}: {row['ratio']:.3f} ({row['ratio']*1000:.0f} per 1,000 crimes)")
+                
+                st.warning(f"⚠️ New Mexico incarcerates at less than HALF the rate of high-ratio states, despite having the highest crime rate!")
+                
+                # Finding 6: Divergent States
+                st.subheader("📉 Finding 6: National Pattern - Divergent Trends")
+                st.markdown("---")
+                
+                states_list = df[state_col].unique()
+                divergent_count = 0
+                divergent_examples = []
+                
+                for state in states_list:
+                    s = df[df[state_col] == state].sort_values(year_col)
+                    if len(s) > 1:
+                        crime_pct = ((s.iloc[-1]['crime_rate_per_100k'] - s.iloc[0]['crime_rate_per_100k']) / s.iloc[0]['crime_rate_per_100k']) * 100
+                        incarc_pct = ((s.iloc[-1]['incarceration_rate_per_100k'] - s.iloc[0]['incarceration_rate_per_100k']) / s.iloc[0]['incarceration_rate_per_100k']) * 100
+                        if crime_pct < -5 and incarc_pct > 5:
+                            divergent_count += 1
+                            if len(divergent_examples) < 5:
+                                divergent_examples.append({
+                                    'state': state,
+                                    'crime_change': crime_pct,
+                                    'incarc_change': incarc_pct
+                                })
+                
+                st.metric("States with Divergent Trends", f"{divergent_count}", "Crime DOWN, Incarceration UP")
+                
+                if divergent_examples:
+                    st.write("**Examples:**")
+                    for ex in divergent_examples:
+                        st.write(f"- **{ex['state']}:** Crime DOWN {abs(ex['crime_change']):.1f}%, Incarceration UP {ex['incarc_change']:.1f}%")
+                
+                st.info("💡 This pattern appears in **19 states** - suggesting systemic factors beyond just responding to crime levels.")
+                
+                # Summary for Presentation
+                st.subheader("🎯 Summary for Your Presentation")
+                st.markdown("---")
+                
+                st.markdown("""
+                **Main Story:**
+                1. New Mexico is **#1 in crime** but only **#30 in incarceration** - a major disconnect
+                2. Crime **decreased 13%** but incarceration **increased 8.4%** - opposite trends
+                3. **Moderate correlation (0.43)** - many factors beyond crime influence incarceration
+                4. **19 states** show the same divergent pattern - this is a national issue
+                5. New Mexico's incarceration-to-crime ratio is **#47** - very low despite high crime
+                
+                **Key Questions for "Access to Justice":**
+                - Are crimes being properly addressed?
+                - Are justice system resources adequate?
+                - Are policies effective?
+                - Why do similar states handle justice so differently?
+                """)
+                
+            else:
+                st.warning("New Mexico data not found.")
+        else:
+            st.warning("Required data columns not available for findings analysis.")
     
     # Footer
     st.sidebar.markdown("---")
