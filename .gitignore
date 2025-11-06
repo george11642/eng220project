@@ -1,0 +1,38 @@
+# Data files
+data/
+*.csv
+*.xlsx
+*.json
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment variables
+.env
+kaggle.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/
+
+# Figures (optional - uncomment if you don't want to track figures)
+# figures/
+
