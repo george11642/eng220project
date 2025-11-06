@@ -88,6 +88,9 @@ def main():
         st.warning("No data available. Please run the data download and cleaning scripts.")
         st.stop()
     
+    # Save original unfiltered dataframe for comparisons
+    df_original = df.copy()
+    
     # Sidebar filters
     st.sidebar.header("Filters")
     
@@ -104,6 +107,7 @@ def main():
                 step=1
             )
             df = df[(df[year_col] >= year_range[0]) & (df[year_col] <= year_range[1])]
+            df_original = df_original[(df_original[year_col] >= year_range[0]) & (df_original[year_col] <= year_range[1])]
     else:
         year_range = None
     
@@ -307,17 +311,17 @@ def main():
     with tab6:
         st.header("🎯 Key Findings for Presentation")
         
-        if state_col and year_col and 'crime_rate_per_100k' in df.columns and 'incarceration_rate_per_100k' in df.columns:
-            # Calculate findings
-            nm = df[df[state_col].str.contains('New Mexico', case=False, na=False)]
-            other = df[~df[state_col].str.contains('New Mexico', case=False, na=False)]
+        if state_col and year_col and 'crime_rate_per_100k' in df_original.columns and 'incarceration_rate_per_100k' in df_original.columns:
+            # Calculate findings using original unfiltered dataframe
+            nm = df_original[df_original[state_col].str.contains('New Mexico', case=False, na=False)]
+            other = df_original[~df_original[state_col].str.contains('New Mexico', case=False, na=False)]
             
             if len(nm) > 0:
                 # Finding 1: The Paradox
                 st.subheader("🔍 Finding 1: The New Mexico Paradox")
                 st.markdown("---")
                 
-                latest = df[df[year_col] == df[year_col].max()].copy()
+                latest = df_original[df_original[year_col] == df_original[year_col].max()].copy()
                 latest_crime = latest.sort_values('crime_rate_per_100k', ascending=False)
                 latest_incarc = latest.sort_values('incarceration_rate_per_100k', ascending=False)
                 
@@ -390,7 +394,7 @@ def main():
                 st.subheader("🔗 Finding 3: Correlation Analysis")
                 st.markdown("---")
                 
-                corr = df[['crime_rate_per_100k', 'incarceration_rate_per_100k']].corr()
+                corr = df_original[['crime_rate_per_100k', 'incarceration_rate_per_100k']].corr()
                 corr_value = corr.iloc[0, 1]
                 
                 st.metric("Overall Correlation", f"{corr_value:.3f}")
@@ -406,8 +410,8 @@ def main():
                 st.subheader("🗺️ Finding 4: Regional Comparison (2016)")
                 st.markdown("---")
                 
-                latest_year = df[year_col].max()
-                latest = df[df[year_col] == latest_year].copy()
+                latest_year = df_original[year_col].max()
+                latest = df_original[df_original[year_col] == latest_year].copy()
                 southwest = ['New Mexico', 'Arizona', 'Texas', 'Nevada', 'Utah', 'Colorado']
                 sw_data = latest[latest[state_col].isin(southwest)].copy()
                 
@@ -456,12 +460,12 @@ def main():
                 st.subheader("📉 Finding 6: National Pattern - Divergent Trends")
                 st.markdown("---")
                 
-                states_list = df[state_col].unique()
+                states_list = df_original[state_col].unique()
                 divergent_count = 0
                 divergent_examples = []
                 
                 for state in states_list:
-                    s = df[df[state_col] == state].sort_values(year_col)
+                    s = df_original[df_original[state_col] == state].sort_values(year_col)
                     if len(s) > 1:
                         crime_pct = ((s.iloc[-1]['crime_rate_per_100k'] - s.iloc[0]['crime_rate_per_100k']) / s.iloc[0]['crime_rate_per_100k']) * 100
                         incarc_pct = ((s.iloc[-1]['incarceration_rate_per_100k'] - s.iloc[0]['incarceration_rate_per_100k']) / s.iloc[0]['incarceration_rate_per_100k']) * 100
@@ -482,25 +486,6 @@ def main():
                         st.write(f"- **{ex['state']}:** Crime DOWN {abs(ex['crime_change']):.1f}%, Incarceration UP {ex['incarc_change']:.1f}%")
                 
                 st.info("💡 This pattern appears in **19 states** - suggesting systemic factors beyond just responding to crime levels.")
-                
-                # Summary for Presentation
-                st.subheader("🎯 Summary for Your Presentation")
-                st.markdown("---")
-                
-                st.markdown("""
-                **Main Story:**
-                1. New Mexico is **#1 in crime** but only **#30 in incarceration** - a major disconnect
-                2. Crime **decreased 13%** but incarceration **increased 8.4%** - opposite trends
-                3. **Moderate correlation (0.43)** - many factors beyond crime influence incarceration
-                4. **19 states** show the same divergent pattern - this is a national issue
-                5. New Mexico's incarceration-to-crime ratio is **#47** - very low despite high crime
-                
-                **Key Questions for "Access to Justice":**
-                - Are crimes being properly addressed?
-                - Are justice system resources adequate?
-                - Are policies effective?
-                - Why do similar states handle justice so differently?
-                """)
                 
             else:
                 st.warning("New Mexico data not found.")
