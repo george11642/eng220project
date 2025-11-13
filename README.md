@@ -122,29 +122,6 @@ The Streamlit app includes:
   - Zoom and pan capabilities
   - New Mexico is highlighted in red across all visualizations
 
-## Deployment to Streamlit Cloud
-
-### Steps for Deployment
-
-1. **Push your code to GitHub:**
-   - Make sure all files are committed
-   - Push to your GitHub repository
-
-2. **Deploy on Streamlit Cloud:**
-   - Go to [share.streamlit.io](https://share.streamlit.io)
-   - Sign in with your GitHub account
-   - Click "New app"
-   - Select your repository
-   - Set the main file path to: `streamlit_app.py`
-   - Click "Deploy"
-
-3. **Configure Secrets (if needed):**
-   - If you need to use Kaggle API in the cloud, add secrets in Streamlit Cloud settings
-   - Go to Settings → Secrets and add:
-     ```
-     KAGGLE_USERNAME=your_username
-     KAGGLE_KEY=your_api_key
-     ```
 
 ### Important Notes for Deployment
 
@@ -204,25 +181,6 @@ The Streamlit app includes:
 - **Scipy:** Statistical analysis
 - **Kaggle API:** Dataset download
 
-## Troubleshooting
-
-### Common Issues
-
-1. **Kaggle API Authentication Error:**
-   - Ensure `kaggle.json` is in the project root or in `~/.kaggle/`
-   - Verify your API credentials are correct
-
-2. **Data Not Found:**
-   - Run `download_data.py` first to download the dataset
-   - Run `clean_data.py` to process the raw data
-
-3. **Module Not Found:**
-   - Ensure all dependencies are installed: `pip install -r requirements.txt`
-   - Check that you're running scripts from the correct directory
-
-4. **Streamlit App Not Loading Data:**
-   - Verify `data/cleaned_data.csv` exists
-   - Check that the data files are not in `.gitignore` if deploying
 
 ## License
 
